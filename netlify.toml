@@ -1,0 +1,13 @@
+[build]
+  functions = "netlify/functions"
+  publish = "."
+
+[[redirects]]
+  from = "/api/notion"
+  to = "/.netlify/functions/notion-proxy"
+  status = 200
+
+[[redirects]]
+  from = "/api/claude-ai"
+  to = "/.netlify/functions/claude-ai"
+  status = 200
