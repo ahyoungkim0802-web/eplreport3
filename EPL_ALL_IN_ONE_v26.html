@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPL영어학원</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+window.__fb = { initializeApp, getDatabase, ref, set, get, remove };
+window.dispatchEvent(new Event('fbready'));
+</script>
+<style>
+:root {
+  --primary:#1a3a6b; --accent:#e63946; --text:#212529; --muted:#6c757d;
+  --border:#dee2e6; --bg:#f4f6fb;
+  --excellent:#2a9d8f; --developing:#e9c46a; --needs:#e76f51;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans KR',sans-serif;background:#fff;color:var(--text);}
+
+/* NAV */
+.nav{display:flex;background:#0f2548;align-items:center;padding:0 20px;height:48px;position:sticky;top:0;z-index:500;}
+.nav-logo{color:#fff;font-size:14px;font-weight:900;padding-right:16px;border-right:1px solid rgba(255,255,255,0.15);margin-right:8px;}
+.nav-tab{color:rgba(255,255,255,0.6);font-size:13px;font-weight:600;padding:0 16px;cursor:pointer;border-bottom:3px solid transparent;height:48px;display:flex;align-items:center;}
+.nav-tab:hover,.nav-tab.active{color:#fff;}
+.nav-tab.active{border-bottom-color:var(--accent);}
+.nav-right{margin-left:auto;display:flex;gap:6px;align-items:center;}
+.nbtn{padding:5px 11px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.12);color:#fff;font-family:inherit;}
+.nbtn:hover{background:rgba(255,255,255,0.22);}
+.fb-dot{width:8px;height:8px;border-radius:50%;background:#2a9d8f;animation:pulse 1.5s infinite;display:none;}
+.fb-dot.on{display:inline-block;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.page{display:none;} .page.active{display:block;}
+
+/* BUTTONS */
+.btn{padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit;}
+.btn-p{background:var(--primary);color:#fff;} .btn-p:hover{background:#0f2548;}
+.btn-a{background:var(--accent);color:#fff;} .btn-a:hover{background:#c1121f;}
+.btn-g{background:none;border:1.5px solid var(--border);color:var(--muted);} .btn-g:hover{border-color:var(--primary);color:var(--primary);}
+.btn-sm{padding:5px 10px;font-size:11px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:#222;color:#fff;padding:11px 18px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .3s;z-index:9999;}
+.toast.show{opacity:1;}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:#fff;border-radius:12px;padding:24px;width:460px;max-width:96vw;box-shadow:0 8px 40px rgba(0,0,0,0.18);max-height:90vh;overflow-y:auto;}
+.modal h2{font-size:15px;font-weight:700;color:var(--primary);margin-bottom:16px;}
+.mfooter{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;}
+.mcanel{padding:8px 16px;border-radius:6px;border:1.5px solid var(--border);background:none;font-size:13px;cursor:pointer;}
+
+/* ACADEMY SETUP */
+.setup-ov{display:none;position:fixed;inset:0;background:rgba(10,20,50,0.95);z-index:9000;align-items:center;justify-content:center;}
+.setup-ov.open{display:flex;}
+.setup-box{background:#fff;border-radius:16px;padding:36px;width:460px;max-width:96vw;}
+.setup-box h2{font-size:20px;font-weight:900;color:var(--primary);margin-bottom:6px;}
+.setup-box p{font-size:13px;color:var(--muted);margin-bottom:24px;}
+.sfield{margin-bottom:14px;}
+.sfield label{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.sfield input{width:100%;padding:11px 13px;border-radius:8px;border:1.5px solid var(--border);font-family:inherit;font-size:14px;outline:none;}
+.sfield input:focus{border-color:var(--primary);}
+
+/* SETTINGS PANEL */
+.settings-panel{display:none;position:fixed;top:48px;right:0;width:300px;background:#fff;border-left:1px solid var(--border);border-bottom:1px solid var(--border);border-radius:0 0 0 12px;box-shadow:-4px 4px 20px rgba(0,0,0,0.1);z-index:400;padding:18px;}
+.settings-panel.open{display:block;}
+.settings-panel h3{font-size:14px;font-weight:700;color:var(--primary);margin-bottom:14px;}
+.sf{margin-bottom:11px;}
+.sf label{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.sf input{width:100%;padding:8px 10px;border-radius:6px;border:1.5px solid var(--border);font-family:inherit;font-size:13px;outline:none;}
+.sf input:focus{border-color:var(--primary);}
+
+/* ═══ STUDENTS PAGE ═══ */
+.stu-layout{display:flex;height:calc(100vh - 48px);}
+.stu-list-panel{width:260px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;background:#fff;}
+.stu-search{width:100%;padding:10px 12px;border-radius:0;border:none;border-bottom:1px solid var(--border);font-family:inherit;font-size:13px;outline:none;}
+.stu-list{flex:1;overflow-y:auto;}
+.stu-item{padding:13px 16px;cursor:pointer;border-bottom:1px solid #f5f5f5;display:flex;align-items:center;gap:10px;}
+.stu-item:hover{background:#f8f9fa;} .stu-item.active{background:#eef4fb;border-left:3px solid var(--primary);}
+.si-av{width:34px;height:34px;border-radius:50%;background:var(--primary);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.si-name{font-size:13px;font-weight:700;} .si-meta{font-size:11px;color:var(--muted);margin-top:1px;}
+.stu-add{padding:13px 16px;border-top:1px solid var(--border);cursor:pointer;color:var(--primary);font-size:13px;font-weight:600;}
+.stu-add:hover{background:#f0f4fa;}
+.stu-empty{padding:40px 20px;text-align:center;color:var(--muted);font-size:13px;}
+
+.hist-panel{flex:1;display:flex;flex-direction:column;background:var(--bg);}
+.hist-header{padding:18px 22px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.hist-header h2{font-size:17px;font-weight:900;color:var(--primary);}
+.hist-header .hcourse{font-size:12px;color:var(--muted);margin-top:2px;}
+.report-cards{padding:18px 22px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:10px;}
+.rc{background:#fff;border-radius:10px;border:1px solid var(--border);padding:14px 18px;cursor:pointer;transition:border-color .15s;display:flex;align-items:center;gap:14px;}
+.rc:hover{border-color:var(--primary);}
+.rc-date{font-size:13px;font-weight:700;color:var(--primary);min-width:85px;}
+.rc-badges{display:flex;flex-wrap:wrap;gap:4px;flex:1;}
+.lv-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;color:#fff;}
+.lv-excellent{background:var(--excellent);} .lv-developing{background:var(--developing);color:#333;} .lv-needs{background:var(--needs);}
+.rc-acts{display:flex;gap:5px;flex-shrink:0;}
+.no-stu{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--muted);}
+.no-hist{padding:60px 20px;text-align:center;color:var(--muted);}
+
+.prev-panel{width:460px;flex-shrink:0;border-left:1px solid var(--border);background:#f8f9fa;overflow-y:auto;display:none;}
+.prev-panel.open{display:block;}
+.prev-header{padding:12px 16px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.prev-header .ph-ttl{font-size:13px;font-weight:700;color:var(--primary);}
+.prev-acts{display:flex;gap:6px;padding:10px 16px;background:#fff;border-bottom:1px solid var(--border);}
+.prev-body{padding:14px;display:flex;justify-content:center;}
+#prev-wrap{transform-origin:top left;}
+
+/* ═══ REPORT PAGE ═══ */
+.rpt-layout{display:flex;height:calc(100vh - 48px);}
+.rpt-sidebar{width:340px;flex-shrink:0;background:var(--primary);color:#fff;overflow-y:auto;padding:18px;}
+.rpt-main{flex:1;overflow-y:auto;background:#fff;display:flex;justify-content:center;padding:24px;}
+.sl{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:.5;margin:16px 0 6px;}
+.sl-row{display:flex;align-items:center;justify-content:space-between;margin:16px 0 6px;}
+.sl-row .sl{margin:0;}
+.rf{margin-bottom:9px;}
+.rf label{display:block;font-size:11px;opacity:.8;margin-bottom:3px;}
+.rf input,.rf textarea{width:100%;padding:7px 9px;border-radius:5px;border:1.5px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-family:inherit;font-size:12px;outline:none;}
+.rf input::placeholder,.rf textarea::placeholder{color:rgba(255,255,255,0.35);}
+.rf input:focus,.rf textarea:focus{border-color:rgba(255,255,255,0.55);}
+.rf textarea{resize:vertical;min-height:56px;}
+.ti{flex:1;font-size:11px;font-weight:600;min-width:0;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:#fff;border-radius:4px;padding:3px 7px;outline:none;font-family:inherit;}
+.ti:focus{border-color:rgba(255,255,255,0.6);}
+.score-row{display:flex;gap:5px;align-items:center;margin-bottom:6px;}
+.score-row .cl{font-size:11px;flex:1;opacity:.9;}
+.score-row select{padding:4px 4px;border-radius:4px;border:1.5px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.12);color:#fff;font-size:10px;font-weight:600;outline:none;cursor:pointer;}
+.score-row select option{background:#1a3a6b;}
+.shdr{display:flex;gap:5px;margin-bottom:4px;opacity:.6;font-size:10px;}
+.rsm{font-size:10px;font-weight:600;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:4px;padding:2px 8px;cursor:pointer;}
+.rsm:hover{background:rgba(255,255,255,0.25);}
+.rbtn{width:100%;padding:10px;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:7px;}
+.rbtn-gen{background:var(--accent);color:#fff;margin-top:16px;} .rbtn-gen:hover{background:#c1121f;}
+.rbtn-print{background:rgba(255,255,255,0.12);color:#fff;border:1.5px solid rgba(255,255,255,0.3);} .rbtn-print:hover{background:rgba(255,255,255,0.22);}
+.rbtn-jpg{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.85);border:1.5px solid rgba(255,255,255,0.2);} .rbtn-jpg:hover{background:rgba(255,255,255,0.16);}
+.rbtn-add{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);border:1.5px dashed rgba(255,255,255,0.25);} .rbtn-add:hover{color:#fff;}
+.extra-sec{margin-bottom:8px;}
+.extra-hdr{display:flex;gap:5px;align-items:center;margin-bottom:3px;}
+.extra-del{background:none;border:none;color:rgba(255,255,255,0.35);font-size:14px;cursor:pointer;}
+.extra-del:hover{color:var(--accent);}
+.sugg{display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border-radius:5px;box-shadow:0 4px 16px rgba(0,0,0,0.2);z-index:100;max-height:120px;overflow-y:auto;}
+.sugg-item{padding:8px 12px;cursor:pointer;font-size:12px;color:var(--primary);border-bottom:1px solid #eee;}
+.sugg-item:hover{background:#f0f4fa;}
+.prev-notice{display:none;font-size:10px;color:#a0c4ff;margin:-4px 0 8px;padding:3px 8px;background:rgba(255,255,255,0.1);border-radius:4px;}
+
+/* AI 섹션 */
+.ai-section{margin-top:14px;padding:12px;background:rgba(255,255,255,0.07);border-radius:8px;border:1px solid rgba(255,255,255,0.15);}
+.ai-ttl{font-size:11px;font-weight:700;letter-spacing:1px;opacity:.7;margin-bottom:10px;}
+.ai-note{font-size:10px;opacity:.6;margin-bottom:8px;line-height:1.5;}
+.rbtn-ai{width:100%;padding:10px;background:linear-gradient(135deg,#10a37f,#1a7f5a);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;}
+.rbtn-ai:hover{background:linear-gradient(135deg,#0d8c6d,#155f44);}
+.rbtn-ai:disabled{opacity:.6;cursor:not-allowed;}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;margin-right:5px;vertical-align:middle;}
+@keyframes sp{to{transform:rotate(360deg)}}
+.api-wrap{margin-top:8px;}
+.api-wrap label{display:block;font-size:10px;opacity:.6;margin-bottom:3px;letter-spacing:.5px;text-transform:uppercase;}
+.api-inp{width:100%;padding:6px 8px;border-radius:5px;border:1.5px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-family:monospace;font-size:11px;outline:none;}
+.api-inp:focus{border-color:rgba(255,255,255,0.5);}
+.api-save{width:100%;margin-top:5px;padding:5px;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.25);border-radius:4px;font-size:11px;cursor:pointer;font-family:inherit;}
+.api-save:hover{background:rgba(255,255,255,0.25);}
+.final-ttl{font-size:11px;font-weight:700;letter-spacing:1px;opacity:.7;margin:14px 0 6px;}
+
+/* REPORT OUTPUT */
+#report{width:720px;background:#fff;}
+.rh{background:var(--primary);color:#fff;padding:22px 28px;display:flex;justify-content:space-between;align-items:center;}
+.rh .ac{font-size:22px;font-weight:900;letter-spacing:-1px;}
+.rh .sub{font-size:11px;opacity:.65;margin-top:3px;}
+.rbadge{background:var(--accent);padding:6px 14px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
+.rband{background:#f0f4fa;border-bottom:2px solid #dce3ee;padding:16px 28px;display:flex;gap:16px;align-items:center;}
+.rband .sn{font-size:20px;font-weight:900;color:var(--primary);}
+.rband .sm{font-size:11px;color:var(--muted);margin-top:2px;}
+.rpill{background:var(--primary);color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;}
+.rbody{padding:20px 28px;display:flex;flex-direction:column;gap:14px;}
+.sec-ttl{font-size:13px;font-weight:700;color:var(--primary);border-left:4px solid var(--accent);padding-left:10px;margin-bottom:12px;}
+.ach-grid{display:grid;grid-template-columns:190px 1fr;gap:16px;}
+#chartWrap{width:190px;height:190px;}
+.stbl .row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f0;}
+.stbl .row:last-child{border-bottom:none;}
+.stbl .cat{flex:1;font-size:12px;}
+.stbl .cat .ko{font-weight:600;}
+.stbl .cat .en{font-size:10px;color:var(--muted);margin-left:3px;}
+.blv{font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;color:#fff;min-width:44px;text-align:center;}
+.blv-excellent{background:var(--excellent);} .blv-developing{background:var(--developing);color:#333;} .blv-needs{background:var(--needs);}
+.rcard{border-radius:9px;padding:14px 16px;}
+.rcard.green{background:#edf7f5;border:1px solid #b7e4da;} .rcard.yellow{background:#fffbec;border:1px solid #f4d97e;}
+.cttl{font-size:13px;font-weight:700;color:var(--primary);border-left:4px solid var(--accent);padding-left:10px;margin-bottom:10px;}
+.rcard p{font-size:12.5px;line-height:1.7;color:var(--text);white-space:pre-line;}
+.pcard{background:#f0f4fa;border-radius:9px;padding:14px 16px;border:1px solid #dce3ee;}
+.pcard .pttl{font-size:13px;font-weight:700;color:var(--primary);border-left:4px solid var(--accent);padding-left:10px;margin-bottom:10px;}
+.pcard p{font-size:12.5px;line-height:1.75;color:#444;white-space:pre-line;}
+.rfooter{background:var(--primary);color:rgba(255,255,255,.65);font-size:11px;text-align:center;padding:12px;}
+.rfooter strong{color:#fff;}
+
+@media print {
+  @page{margin:0;size:A4 portrait;}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+  html,body{margin:0;padding:0;background:#fff!important;}
+  .nav,.rpt-sidebar,.modal-bg,.stu-layout,.setup-ov,.settings-panel{display:none!important;}
+  .rpt-main{padding:0!important;}
+  #report,#ptarget{width:210mm!important;}
+  .rh{background:var(--primary)!important;color:#fff!important;}
+  .rband{background:#f0f4fa!important;}
+  .rbadge,.rpill{background:var(--accent)!important;color:#fff!important;}
+  .rfooter{background:var(--primary)!important;position:fixed!important;bottom:0!important;left:0!important;width:210mm!important;}
+  #report,#ptarget{padding-bottom:48px!important;}
+  .blv-excellent{background:var(--excellent)!important;} .blv-developing{background:var(--developing)!important;color:#333!important;} .blv-needs{background:var(--needs)!important;}
+  .rcard.green{background:#edf7f5!important;} .rcard.yellow{background:#fffbec!important;}
+  .pcard{background:#f0f4fa!important;}
+}
+</style>
+</head>
+<body>
+
+<!-- Setup -->
+<div class="setup-ov" id="setup-ov">
+  <div class="setup-box">
+    <div style="font-size:36px;margin-bottom:12px">🏫</div>
+    <h2>학원 정보를 입력해주세요</h2>
+    <p>처음 한 번만 설정하면 돼요. 나중에 ⚙️ 설정에서 변경 가능해요.</p>
+    <div class="sfield"><label>학원 이름 *</label><input id="su-name" placeholder="예: EPL영어학원"></div>
+    <div class="sfield"><label>전화번호</label><input id="su-phone" placeholder="예: 031-0000-0000"></div>
+    <div class="sfield"><label>기본 과정명</label><input id="su-course" placeholder="예: Bridge Writing 2"></div>
+    <button class="btn btn-p" style="width:100%;padding:12px;font-size:14px;margin-top:8px;" onclick="saveSetup()">시작하기 →</button>
+  </div>
+</div>
+
+<!-- Settings -->
+<div class="settings-panel" id="settings-panel">
+  <h3>⚙️ 학원 설정</h3>
+  <div class="sf"><label>학원 이름</label><input id="st-name"></div>
+  <div class="sf"><label>전화번호</label><input id="st-phone"></div>
+  <div class="sf"><label>기본 과정명</label><input id="st-course"></div>
+  <button class="btn btn-p" style="width:100%;margin-top:6px;" onclick="saveSettings()">저장</button>
+  <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px;">
+    <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:10px;">🗂 Notion 연동</div>
+    <div class="sf"><label>Notion 토큰</label><input id="st-notion-token" type="password" placeholder="secret_..."></div>
+    <div class="sf"><label>이번 달 DB 링크 (매달 교체)</label><input id="st-notion-db" placeholder="https://notion.so/..."></div>
+    <div class="sf"><label>학생이름 컬럼명</label><input id="st-notion-nameCol" placeholder="학생 이름"></div>
+    <div class="sf"><label>JonT 식별자</label><input id="st-notion-jonId" placeholder="Jon"></div>
+    <div class="sf"><label>SandyT 식별자</label><input id="st-notion-sandyId" placeholder="Sandy"></div>
+    <div class="sf"><label>JonT 코멘트 컬럼</label><input id="st-notion-jonCmt" placeholder="JonT Comments"></div>
+    <div class="sf"><label>SandyT 코멘트 컬럼</label><input id="st-notion-sandyCmt" placeholder="Sandy T Comments"></div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:6px;">영역 컬럼명 (앱 영역명 = Notion 컬럼명)</div>
+    <div id="st-notion-catmap"></div>
+    <button class="btn btn-p" style="width:100%;margin-top:8px;font-size:12px;" onclick="saveNotionSettings()">Notion 설정 저장</button>
+  </div>
+  <button class="mcanel" style="width:100%;margin-top:8px;text-align:center;" onclick="closeSettings()">닫기</button>
+</div>
+
+<!-- Category Modal -->
+<div class="modal-bg" id="cat-modal">
+  <div class="modal">
+    <h2>✏️ 영역 항목 편집</h2>
+    <div id="cat-modal-body"></div>
+    <button class="btn btn-g" style="width:100%;margin-top:8px;padding:8px;" onclick="addCatModalRow()">+ 추가</button>
+    <div class="mfooter"><button class="mcanel" onclick="closeCatModal()">취소</button><button class="btn btn-p" onclick="applyCatModal()">적용</button></div>
+  </div>
+</div>
+
+<!-- Nav -->
+<div class="nav">
+  <div class="nav-logo">🏫 <span id="nav-acad">EPL영어학원</span></div>
+  <div class="nav-tab active" id="ntab-students" onclick="gotoPage('students')">👤 학생 기록</div>
+  <div class="nav-tab" id="ntab-report" onclick="gotoPage('report')">📄 리포트 생성</div>
+  <div class="nav-right">
+    <div class="fb-dot" id="fb-dot" title="Firebase 연결됨"></div>
+    <button class="nbtn" onclick="toggleSettings()">⚙️ 설정</button>
+    <button class="nbtn" onclick="syncFromFirebase()">☁️ 동기화</button>
+    <button class="nbtn" onclick="exportData()">📤 백업</button>
+    <button class="nbtn" onclick="document.getElementById('imp-file').click()">📥 복원</button>
+    <input type="file" id="imp-file" accept=".json" style="display:none" onchange="importData(this)">
+  </div>
+</div>
+
+<!-- STUDENTS PAGE -->
+<div class="page active" id="page-students">
+  <div class="stu-layout">
+    <div class="stu-list-panel">
+      <input class="stu-search" id="stu-search" placeholder="🔍 학생 이름 검색..." oninput="filterStudents(this.value)">
+      <div class="stu-list" id="stu-list"></div>
+      <div class="stu-add" onclick="gotoPage('report')">＋ 새 리포트 생성</div>
+    </div>
+    <div class="hist-panel" id="hist-panel">
+      <div id="no-stu" class="no-stu"><div style="font-size:48px">👈</div><p style="margin-top:12px;font-size:14px;color:var(--muted)">왼쪽에서 학생을 선택하세요</p></div>
+      <div id="stu-hist-view" style="display:none;flex:1;flex-direction:column;">
+        <div class="hist-header">
+          <div><h2 id="hist-name">-</h2><div class="hcourse" id="hist-course"></div></div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-sm btn-p" onclick="gotoWithStudent()">+ 새 리포트</button>
+            <button class="btn btn-sm btn-g" onclick="deleteAllRpts()">삭제</button>
+          </div>
+        </div>
+        <div class="report-cards" id="rpt-cards"></div>
+      </div>
+    </div>
+    <div class="prev-panel" id="prev-panel">
+      <div class="prev-header">
+        <div class="ph-ttl" id="prev-ttl">미리보기</div>
+        <button class="btn btn-g" style="padding:4px 10px;font-size:11px;" onclick="closePreview()">✕</button>
+      </div>
+      <div class="prev-acts">
+        <button class="btn btn-sm btn-p" onclick="editPreview()">✏️ 수정</button>
+        <button class="btn btn-sm btn-p" onclick="printPreview()">🖨 인쇄/PDF</button>
+        <button class="btn btn-sm btn-g" onclick="jpgPreview()">🖼 JPG</button>
+      </div>
+      <div class="prev-body"><div id="prev-wrap"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- REPORT PAGE -->
+<div class="page" id="page-report">
+  <div class="rpt-layout">
+    <div class="rpt-sidebar">
+      <div class="sl">학원 정보</div>
+      <div class="rf"><label>학원명</label><input id="r-acad" value="EPL영어학원"></div>
+      <div class="rf"><label>과정명</label><input id="r-course" value="Bridge Writing 2"></div>
+
+      <div class="sl">학생 정보</div>
+      <div class="rf" style="position:relative">
+        <label>학생 이름</label>
+        <input id="r-stu" placeholder="이름 입력..." autocomplete="off" oninput="onStuInput(this.value)">
+        <div class="sugg" id="r-sugg"></div>
+      </div>
+      <div class="prev-notice" id="prev-notice">✅ 이전 기록을 불러왔어요</div>
+      <button id="notion-load-btn" onclick="notionLoadStudent()" style="width:100%;padding:8px;margin:4px 0 8px;background:rgba(255,255,255,0.13);color:#fff;border:1.5px solid rgba(255,255,255,0.3);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">📥 Notion에서 불러오기</button>
+      <div class="rf"><label>날짜</label><input id="r-date" type="date"></div>
+
+      <div class="sl-row">
+        <span class="sl">영역별 점수</span>
+        <button class="rsm" onclick="openCatModal()">항목 편집 ✏️</button>
+      </div>
+      <div class="shdr"><span style="flex:1"></span><span style="width:68px;text-align:center;font-size:10px;">한국T</span><span style="width:68px;text-align:center;font-size:10px;">원어민T</span></div>
+      <div id="r-scores"></div>
+
+      <!-- AI 자동 작성 -->
+      <div class="ai-section">
+        <div class="ai-ttl">✨ AI 자동 작성</div>
+        <div class="ai-note">메모를 입력하면 AI가 리포트 문장으로 다듬어줘요</div>
+
+        <div class="rf"><label>강점 메모</label><textarea id="d-str" rows="2" placeholder="예: 수업 태도 좋음, 발표 적극적"></textarea></div>
+        <div class="rf"><label>보완 메모</label><textarea id="d-dev" rows="2" placeholder="예: 단어 암기 부족, 문법 실수 잦음"></textarea></div>
+        <div class="rf"><label>학부모 메모</label><textarea id="d-par" rows="2" placeholder="예: 이번 달 성장함, 꾸준히 해달라고 당부"></textarea></div>
+
+        <div style="display:none">
+          <input id="ai-cond" value="EPL영어학원 내부 리포트 작성 지침에 따라 작성">
+          <textarea id="ai-sys">당신은 EPL영어학원 선생님입니다. 아래 지침을 반드시 따르십시오.
+
+# 지침
+1. **호칭:** 성을 제외하고 '이름+이가/가' 형식을 사용하십시오.
+2. **사실만 기술:** 입력되지 않은 내용은 절대 지어내지 마십시오.
+3. **문체:** '~요' 체를 절대 사용하지 말고 '~습니다' '~입니다' 체로만 작성하십시오. AI가 쓴 티가 나지 않게 선생님이 직접 쓴 것처럼 담백하게 작성하십시오.
+4. **구성:** 한국 선생님([Sandy]) 내용 5줄, 원어민 선생님([Jon]) 내용 5줄을 각각 구분하여 작성하십시오. [Sandy]와 [Jon] 레이블을 그대로 유지하십시오.
+5. **언어:** [Jon] 내용은 반드시 영어로, [Sandy] 내용은 반드시 한국어로 작성하십시오. 절대 번역하지 마십시오.
+
+반드시 아래 JSON 형식으로만 응답하세요:
+{"strengths":"내용","dev":"내용","parent":"내용"}</textarea>
+        </div>
+
+        <button class="rbtn-ai" id="ai-btn" onclick="aiGenerate()">✨ AI로 다듬기</button>
+
+        <div style="display:none">
+          <input class="api-inp" id="api-key" type="password" value="">
+        </div>
+      </div>
+
+      <div class="final-ttl">최종 내용 (수정 가능)</div>
+      <div class="sl-row"><span class="sl" style="margin:0;">강점</span><input id="t-str" class="ti" value="✅ 강점 (Strengths)"></div>
+      <div class="rf"><textarea id="r-str" rows="3" placeholder="강점 내용..."></textarea></div>
+      <div class="sl-row"><span class="sl" style="margin:0;">보완 필요</span><input id="t-dev" class="ti" value="⚠️ 세밀한 보완이 필요한 부분"></div>
+      <div class="rf"><textarea id="r-dev" rows="3" placeholder="보완 내용..."></textarea></div>
+      <div class="sl-row"><span class="sl" style="margin:0;">학부모 메시지</span><input id="t-par" class="ti" value="💬 학부모님께 드리는 메시지"></div>
+      <div class="rf"><textarea id="r-par" rows="4" placeholder="학부모 메시지..."></textarea></div>
+      <div id="r-extras"></div>
+      <button class="rbtn rbtn-add" onclick="addExtra()">+ 항목 추가</button>
+
+      <div class="sl" style="margin-top:16px">하단 정보</div>
+      <div class="rf"><label>학원명</label><input id="r-fname" value="EPL영어학원"></div>
+      <div class="rf"><label>전화번호</label><input id="r-fphone" value="031-8005-7905"></div>
+
+      <button class="rbtn rbtn-gen" onclick="generateReport()">📄 리포트 생성 & 저장</button>
+      <button class="rbtn rbtn-print" onclick="printReport()">🖨 인쇄 / PDF</button>
+      <button class="rbtn rbtn-jpg" onclick="saveJpg()">🖼 JPG 저장</button>
+    </div>
+    <div class="rpt-main"><div id="report"></div></div>
+  </div>
+</div>
+
+<div id="ptarget" style="display:none;"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══ DB ═══
+const RP = 'epl_r_', CK = 'epl_cats', AK = 'epl_acad', OK = 'epl_oai', NK = 'epl_notion', FBCFG = {
+  apiKey:"AIzaSyCY2Fbt2pJMPsxqrVOcwGqIdeXbkeMRw_E",
+  authDomain:"epl-report.firebaseapp.com",
+  databaseURL:"https://epl-report-default-rtdb.firebaseio.com",
+  projectId:"epl-report",
+  storageBucket:"epl-report.firebasestorage.app",
+  messagingSenderId:"970963977890",
+  appId:"1:970963977890:web:abfea5a026f3b6962f39fb"
+};
+
+let fbDb = null;
+
+window.addEventListener('fbready', () => {
+  try {
+    const { initializeApp, getDatabase } = window.__fb;
+    fbDb = getDatabase(initializeApp(FBCFG));
+    document.getElementById('fb-dot').classList.add('on');
+    if (getAcad()) syncFromFirebase();
+  } catch(e) { console.warn('FB:', e); }
+});
+
+function fbKey() {
+  const a = getAcad();
+  return a ? a.name.replace(/[.#$/\[\]]/g, '_') : 'unknown';
+}
+
+async function fbSave(key, data) {
+  if (!fbDb) return;
+  try { const { ref, set } = window.__fb; await set(ref(fbDb, fbKey()+'/'+key), data); } catch(e) {}
+}
+async function fbDel(key) {
+  if (!fbDb) return;
+  try { const { ref, remove } = window.__fb; await remove(ref(fbDb, fbKey()+'/'+key)); } catch(e) {}
+}
+
+function dbSave(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+function dbLoad(key) { try { const r=localStorage.getItem(key); return r?JSON.parse(r):null; } catch(e) { return null; } }
+function dbDel(key) { localStorage.removeItem(key); }
+
+function getAcad() { return dbLoad(AK); }
+
+async function saveRpt(name, data) {
+  const key = RP + name.trim() + '_' + Date.now();
+  const d = {...data, studentName: name.trim()};
+  dbSave(key, d);
+  await fbSave('reports/'+key, d);
+  return key;
+}
+
+function getStuRpts(name) {
+  const res = [];
+  for (let i=0; i<localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith(RP+name.trim()+'_')) {
+      const d = dbLoad(k); if (d) res.push({key:k,...d});
+    }
+  }
+  return res.sort((a,b) => (b.savedAt||'').localeCompare(a.savedAt||''));
+}
+
+function getAllNames() {
+  const s = new Set();
+  for (let i=0; i<localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith(RP)) { const d=dbLoad(k); if(d?.studentName) s.add(d.studentName); }
+  }
+  return [...s].sort((a,b) => a.localeCompare(b,'ko'));
+}
+
+async function delRpt(key) { dbDel(key); await fbDel('reports/'+key); }
+
+async function syncFromFirebase() {
+  if (!fbDb || !getAcad()) return;
+  try {
+    const { ref, get } = window.__fb;
+    const snap = await get(ref(fbDb, fbKey()+'/reports'));
+    if (snap.exists()) {
+      Object.entries(snap.val()).forEach(([k,v]) => { if (!localStorage.getItem(k)) dbSave(k,v); });
+      renderStuList('');
+      toast('☁️ 동기화 완료!');
+    }
+  } catch(e) { console.warn('Sync:', e); }
+}
+
+async function exportData() {
+  const data = {};
+  for (let i=0; i<localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && (k.startsWith(RP)||k===CK||k===AK)) data[k] = localStorage.getItem(k);
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+  a.download = `EPL_백업_${new Date().toLocaleDateString('ko-KR').replace(/\./g,'').replace(/ /g,'')}.json`;
+  a.click(); toast('백업 저장됐어요!');
+}
+
+function importData(el) {
+  const file = el.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = e => {
+    try { Object.entries(JSON.parse(e.target.result)).forEach(([k,v])=>localStorage.setItem(k,v)); toast('복원됐어요!'); renderStuList(''); } catch { alert('파일 오류'); }
+  };
+  r.readAsText(file); el.value='';
+}
+
+// ═══ CATS ═══
+function getCats() {
+  return dbLoad(CK) || [
+    {ko:'숙제',en:'Homework'},{ko:'온라인숙제',en:'Online HW'},
+    {ko:'수업태도',en:'Attitude'},{ko:'문장구성',en:'Structure'},{ko:'단어테스트',en:'Vocabulary'}
+  ];
+}
+
+const LVS = [
+  {value:'excellent',ko:'우수',en:'Excellent'},
+  {value:'developing',ko:'성장',en:'Developing'},
+  {value:'needs',ko:'노력 필요',en:'Needs Effort'}
+];
+function getLv(v) { return LVS.find(l=>l.value===v)||LVS[0]; }
+
+// ═══ TOAST ═══
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+// ═══ ACADEMY ═══
+function applyAcad() {
+  const a = getAcad(); if (!a) return;
+  document.querySelector('#nav-acad').textContent = a.name;
+  const ra=document.getElementById('r-acad'), rf=document.getElementById('r-fname'), rp=document.getElementById('r-fphone'), rc=document.getElementById('r-course');
+  if (ra) ra.value = a.name;
+  if (rf) rf.value = a.name;
+  if (rp && a.phone) rp.value = a.phone;
+  if (rc && a.course) rc.value = a.course;
+}
+
+function saveSetup() {
+  const name = document.getElementById('su-name').value.trim();
+  if (!name) { alert('학원 이름을 입력해주세요'); return; }
+  const a = {name, phone:document.getElementById('su-phone').value.trim(), course:document.getElementById('su-course').value.trim()};
+  dbSave(AK, a);
+  document.getElementById('setup-ov').classList.remove('open');
+  applyAcad();
+  setTimeout(()=>syncFromFirebase(), 500);
+  toast(`"${name}" 으로 설정됐어요!`);
+}
+
+function toggleSettings() {
+  const p = document.getElementById('settings-panel');
+  if (!p.classList.contains('open')) {
+    const a = getAcad()||{};
+    document.getElementById('st-name').value = a.name||'';
+    document.getElementById('st-phone').value = a.phone||'';
+    document.getElementById('st-course').value = a.course||'';
+    // Notion settings
+    const ns = getNotion();
+    document.getElementById('st-notion-token').value = ns.token||'';
+    document.getElementById('st-notion-db').value = ns.dbLink||'';
+    document.getElementById('st-notion-nameCol').value = ns.nameCol||'학생 이름';
+    document.getElementById('st-notion-jonId').value = ns.jonId||'Jon';
+    document.getElementById('st-notion-sandyId').value = ns.sandyId||'Sandy';
+    document.getElementById('st-notion-jonCmt').value = ns.jonComment||'JonT Comments';
+    document.getElementById('st-notion-sandyCmt').value = ns.sandyComment||'Sandy T Comments';
+    renderNotionCatMap();
+  }
+  p.classList.toggle('open');
+}
+function closeSettings() { document.getElementById('settings-panel').classList.remove('open'); }
+function saveSettings() {
+  const name = document.getElementById('st-name').value.trim();
+  if (!name) { alert('학원 이름을 입력해주세요'); return; }
+  dbSave(AK, {name, phone:document.getElementById('st-phone').value.trim(), course:document.getElementById('st-course').value.trim()});
+  applyAcad(); closeSettings(); toast('설정 저장됐어요!');
+}
+
+// ═══ NOTION SETTINGS ═══
+function getNotion() { return dbLoad(NK) || {}; }
+
+function saveNotionSettings() {
+  const ns = {
+    token: document.getElementById('st-notion-token').value.trim(),
+    dbLink: document.getElementById('st-notion-db').value.trim(),
+    nameCol: document.getElementById('st-notion-nameCol').value.trim() || '학생 이름',
+    jonId: document.getElementById('st-notion-jonId').value.trim() || 'Jon',
+    sandyId: document.getElementById('st-notion-sandyId').value.trim() || 'Sandy',
+    jonComment: document.getElementById('st-notion-jonCmt').value.trim() || 'JonT Comments',
+    sandyComment: document.getElementById('st-notion-sandyCmt').value.trim() || 'Sandy T Comments',
+    catMapping: {}
+  };
+  document.querySelectorAll('#st-notion-catmap .notion-cat-row').forEach(row => {
+    const ko = row.dataset.ko;
+    const val = row.querySelector('input').value.trim();
+    if (ko && val) ns.catMapping[ko] = val;
+  });
+  dbSave(NK, ns);
+  toast('🗂 Notion 설정 저장됐어요!');
+}
+
+function renderNotionCatMap() {
+  const ns = getNotion();
+  const div = document.getElementById('st-notion-catmap');
+  if (!div) return;
+  div.innerHTML = RCATS.map(c => {
+    const mapped = (ns.catMapping || {})[c.ko] || c.ko;
+    return `<div class="notion-cat-row sf" data-ko="${c.ko}" style="display:flex;gap:5px;align-items:center;margin-bottom:5px;">
+      <span style="font-size:11px;flex:1;opacity:.8;">${c.ko}</span>
+      <input style="flex:1.5;padding:5px 7px;border-radius:5px;border:1.5px solid var(--border);font-size:11px;outline:none;" value="${mapped}" placeholder="${c.ko}">
+    </div>`;
+  }).join('');
+}
+
+function extractDbId(link) {
+  const m = link.match(/([a-f0-9]{32})/i);
+  return m ? m[1] : null;
+}
+
+function parseNotionLevel(name) {
+  if (!name) return 'developing';
+  if (name.includes('우수')) return 'excellent';
+  if (name.includes('성장')) return 'developing';
+  if (name.includes('노력')) return 'needs';
+  return 'developing';
+}
+
+function getRichText(prop) {
+  if (!prop) return '';
+  if (prop.rich_text) return prop.rich_text.map(r => r.plain_text).join('');
+  if (prop.title) return prop.title.map(r => r.plain_text).join('');
+  return '';
+}
+
+function parseNotionComment(text) {
+  if (!text) return { str: '', dev: '', par: '' };
+  const strMatch = text.match(/1\s*[.\)]\s*강점[^:：\n]*[:：]?\s*([\s\S]*?)(?=2\s*[.\)]|$)/);
+  const devMatch = text.match(/2\s*[.\)]\s*약점[^:：\n]*[:：]?\s*([\s\S]*?)(?=3\s*[.\)]|$)/);
+  const parMatch = text.match(/3\s*[.\)]\s*당부[^:：\n]*[:：]?\s*([\s\S]*?)$/);
+  return {
+    str: strMatch ? strMatch[1].trim() : '',
+    dev: devMatch ? devMatch[1].trim() : '',
+    par: parMatch ? parMatch[1].trim() : text
+  };
+}
+
+async function notionLoadStudent() {
+  const ns = getNotion();
+  if (!ns.token || !ns.dbLink) {
+    toast('⚠️ 설정에서 Notion 토큰과 DB 링크를 입력하세요');
+    toggleSettings(); return;
+  }
+  const studentName = document.getElementById('r-stu').value.trim();
+  if (!studentName) { toast('⚠️ 학생 이름을 먼저 입력하세요'); return; }
+  const dbId = extractDbId(ns.dbLink);
+  if (!dbId) { toast('⚠️ DB 링크 형식이 맞지 않아요'); return; }
+
+  const btn = document.getElementById('notion-load-btn');
+  btn.disabled = true; btn.textContent = '⏳ 불러오는 중...';
+
+  try {
+    const res = await fetch('/api/notion', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: ns.token, dbId, studentName, nameCol: ns.nameCol || '학생 이름' })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    if (!data.results || !data.results.length) {
+      toast(`"${studentName}" 을 Notion에서 찾을 수 없어요`); return;
+    }
+
+    const props = data.results[0].properties;
+    const catMap = ns.catMapping || {};
+    const jonId = ns.jonId || 'Jon';
+    const sandyId = ns.sandyId || 'Sandy';
+
+    RCATS.forEach((cat, i) => {
+      const colName = catMap[cat.ko] || cat.ko;
+      const prop = props[colName];
+      if (!prop) return;
+      const values = prop.multi_select || prop.select ? (prop.multi_select || [prop.select]) : [];
+      const filtered = values.filter(Boolean);
+      let jonLevel = null, sandyLevel = null;
+      filtered.forEach(v => {
+        const level = parseNotionLevel(v.name);
+        if (v.name.includes(jonId)) jonLevel = level;       // Jon = 원어민T
+        if (v.name.includes(sandyId)) sandyLevel = level;   // Sandy = 한국T
+      });
+      // Jon = 원어민T → prev, Sandy = 한국T → level
+      if (sandyLevel) RCATS[i].level = sandyLevel;
+      if (jonLevel) RCATS[i].prev = jonLevel;
+      // Sandy 없으면 (온라인숙제 등) Jon 값을 양쪽 다
+      if (jonLevel && !sandyLevel) RCATS[i].level = jonLevel;
+    });
+    renderScoreRows();
+
+    const jonText = getRichText(props[ns.jonComment || 'JonT Comments']);
+    const sandyText = getRichText(props[ns.sandyComment || 'Sandy T Comments']);
+
+    if (jonText || sandyText) {
+      const jonP = parseNotionComment(jonText);
+      const sandyP = parseNotionComment(sandyText);
+      document.getElementById('d-str').value = [jonP.str && `[Jon] ${jonP.str}`, sandyP.str && `[Sandy] ${sandyP.str}`].filter(Boolean).join('\n');
+      document.getElementById('d-dev').value = [jonP.dev && `[Jon] ${jonP.dev}`, sandyP.dev && `[Sandy] ${sandyP.dev}`].filter(Boolean).join('\n');
+      document.getElementById('d-par').value = [jonP.par && `[Jon] ${jonP.par}`, sandyP.par && `[Sandy] ${sandyP.par}`].filter(Boolean).join('\n');
+      toast('📥 Notion 로드 완료! Claude가 변환 중...');
+      await aiGenerate();
+    } else {
+      toast('✅ 점수 자동 입력됐어요!');
+    }
+  } catch(e) {
+    console.error(e);
+    toast('❌ 오류: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '📥 Notion에서 불러오기';
+  }
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#settings-panel') && !e.target.closest('[onclick*="toggleSettings"]'))
+    document.getElementById('settings-panel').classList.remove('open');
+  if (!e.target.closest('#r-sugg') && e.target.id!=='r-stu')
+    document.getElementById('r-sugg').style.display = 'none';
+});
+
+// ═══ PAGE ═══
+function gotoPage(p) {
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.getElementById('ntab-'+p).classList.add('active');
+  if (p==='students') renderStuList('');
+  if (p==='report') renderScoreRows();
+}
+
+// ═══ STUDENTS ═══
+let selStu = '';
+function renderStuList(filter) {
+  const names = getAllNames().filter(n => !filter || n.includes(filter));
+  const list = document.getElementById('stu-list');
+  if (!names.length) { list.innerHTML='<div class="stu-empty">아직 학생이 없어요<br>리포트를 생성하면 저장돼요</div>'; return; }
+  list.innerHTML = names.map(n => {
+    const rpts = getStuRpts(n);
+    const d = rpts[0]?.savedAt ? new Date(rpts[0].savedAt).toLocaleDateString('ko-KR') : '';
+    return `<div class="stu-item ${selStu===n?'active':''}" onclick="selStudent('${n}')">
+      <div class="si-av">${n[0]}</div>
+      <div><div class="si-name">${n}</div><div class="si-meta">${rpts.length}개 기록${d?' · '+d:''}</div></div>
+    </div>`;
+  }).join('');
+}
+function filterStudents(v) { renderStuList(v); }
+
+function selStudent(name) {
+  selStu = name;
+  renderStuList(document.getElementById('stu-search').value);
+  const rpts = getStuRpts(name);
+  document.getElementById('no-stu').style.display = 'none';
+  const hv = document.getElementById('stu-hist-view');
+  hv.style.display = 'flex';
+  document.getElementById('hist-name').textContent = name;
+  document.getElementById('hist-course').textContent = rpts[0]?.course ? '과정: '+rpts[0].course : '';
+  const cards = document.getElementById('rpt-cards');
+  if (!rpts.length) { cards.innerHTML='<div class="no-hist"><div style="font-size:36px">📄</div><p style="margin-top:10px;color:var(--muted)">기록이 없어요</p></div>'; return; }
+  cards.innerHTML = rpts.map(r => {
+    const d = r.savedAt ? new Date(r.savedAt).toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'}) : '-';
+    const badges = (r.categories||[]).map(c=>`<span class="lv-badge lv-${c.level}">${c.ko}</span>`).join('');
+    return `<div class="rc" onclick="openPreview('${r.key}')">
+      <div><div class="rc-date">${d}</div><div style="font-size:11px;color:var(--muted)">${r.course||''}</div></div>
+      <div class="rc-badges">${badges}</div>
+      <div class="rc-acts" onclick="event.stopPropagation()">
+        <button class="btn btn-sm btn-p" onclick="openPreview('${r.key}')">보기</button>
+        <button class="btn btn-sm btn-g" onclick="delRptUI('${r.key}')">삭제</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function gotoWithStudent() {
+  document.getElementById('r-stu').value = selStu;
+  const rpts = getStuRpts(selStu);
+  if (rpts.length) { RCATS = rpts[0].categories.map(c=>({...c,prev:c.level})); }
+  gotoPage('report'); renderScoreRows();
+  document.getElementById('prev-notice').style.display = rpts.length?'block':'none';
+}
+
+async function delRptUI(key) {
+  if (!confirm('이 기록을 삭제할까요?')) return;
+  await delRpt(key); selStudent(selStu); closePreview(); toast('삭제했어요');
+}
+async function deleteAllRpts() {
+  if (!confirm(`"${selStu}" 의 모든 기록을 삭제할까요?`)) return;
+  for (const r of getStuRpts(selStu)) await delRpt(r.key);
+  selStu = '';
+  document.getElementById('no-stu').style.display='flex';
+  document.getElementById('stu-hist-view').style.display='none';
+  closePreview(); renderStuList(''); toast('모두 삭제했어요');
+}
+
+// ═══ PREVIEW ═══
+let pvChart = null, pvKey = '';
+function openPreview(key) {
+  const data = dbLoad(key); if (!data) return;
+  pvKey = key;
+  document.getElementById('prev-wrap').innerHTML = buildRptHTML(data);
+  document.getElementById('prev-panel').classList.add('open');
+  const d = data.savedAt ? new Date(data.savedAt).toLocaleDateString('ko-KR') : '';
+  document.getElementById('prev-ttl').textContent = data.studentName+' · '+d;
+  setTimeout(() => {
+    const scale = 420/720;
+    const w = document.getElementById('prev-wrap');
+    w.style.transform = `scale(${scale})`;
+    w.style.transformOrigin = 'top left';
+    w.style.width = '720px';
+    w.parentElement.style.minHeight = (w.scrollHeight*scale+32)+'px';
+    drawChart(data, '#prev-wrap #chartWrap canvas', 2, pvChart, c=>pvChart=c);
+  }, 50);
+}
+function closePreview() {
+  document.getElementById('prev-panel').classList.remove('open');
+  if (pvChart) pvChart.destroy();
+}
+function editPreview() {
+  if (!pvKey) return;
+  const data = dbLoad(pvKey); if (!data) return;
+  document.getElementById('r-acad').value = data.academy||'';
+  document.getElementById('r-course').value = data.course||'';
+  document.getElementById('r-stu').value = data.studentName||'';
+  document.getElementById('r-date').value = data.date||'';
+  document.getElementById('r-str').value = data.str||'';
+  document.getElementById('r-dev').value = data.dev||'';
+  document.getElementById('r-par').value = data.par||'';
+  document.getElementById('t-str').value = data.tS||'✅ 강점 (Strengths)';
+  document.getElementById('t-dev').value = data.tD||'⚠️ 세밀한 보완이 필요한 부분';
+  document.getElementById('t-par').value = data.tP||'💬 학부모님께 드리는 메시지';
+  document.getElementById('r-fname').value = data.fName||'';
+  document.getElementById('r-fphone').value = data.fPhone||'';
+  if (data.categories) { RCATS = data.categories.map(c=>({...c})); renderScoreRows(); }
+  const ew = document.getElementById('r-extras'); ew.innerHTML='';
+  (data.extras||[]).forEach(e => {
+    const s=document.createElement('div'); s.className='extra-sec';
+    s.innerHTML=`<div class="extra-hdr"><input type="text" class="ti etti" value="${e.t}"><button class="extra-del" onclick="this.closest('.extra-sec').remove()">✕</button></div><div class="rf"><textarea class="etbo" rows="3">${e.b}</textarea></div>`;
+    ew.appendChild(s);
+  });
+  delRpt(pvKey); pvKey=''; closePreview(); gotoPage('report'); generateReport();
+  toast('수정 모드로 불러왔어요');
+}
+function printPreview() {
+  if (!pvKey) return;
+  const data = dbLoad(pvKey);
+  const pt = document.getElementById('ptarget');
+  pt.innerHTML = buildRptHTML(data); pt.style.display='block';
+  setTimeout(() => {
+    const cv = pt.querySelector('#chartWrap canvas');
+    let ci = null;
+    if (cv) { ci = buildChart(data, cv.getContext('2d'), 3); }
+    setTimeout(() => { window.print(); setTimeout(()=>{ pt.style.display='none'; if(ci) ci.destroy(); },500); }, 400);
+  }, 100);
+}
+function jpgPreview() {
+  if (!pvKey) return;
+  const data = dbLoad(pvKey);
+  const pt = document.getElementById('ptarget');
+  pt.innerHTML = buildRptHTML(data);
+  pt.style.cssText='display:block;position:fixed;left:-9999px;width:720px;';
+  setTimeout(() => {
+    const cv = pt.querySelector('#chartWrap canvas');
+    let ci = null;
+    if (cv) ci = buildChart(data, cv.getContext('2d'), 3);
+    setTimeout(() => {
+      html2canvas(pt,{scale:3,useCORS:true,backgroundColor:'#ffffff',logging:false}).then(c=>{
+        const a=document.createElement('a');
+        a.download=data.studentName+'_성적리포트.jpg';
+        a.href=c.toDataURL('image/jpeg',0.97); a.click();
+        pt.style.cssText='display:none;'; if(ci) ci.destroy();
+      });
+    }, 400);
+  }, 100);
+}
+
+function drawChart(data, sel, dpr, inst, setter) {
+  if (inst) inst.destroy();
+  const cv = document.querySelector(sel); if (!cv) return;
+  setter(buildChart(data, cv.getContext('2d'), dpr));
+}
+
+function buildChart(data, ctx, dpr) {
+  return new Chart(ctx, {
+    type:'radar',
+    data:{
+      labels: data.categories.map(s=>s.ko),
+      datasets:[
+        {label:'한국T',data:data.categories.map(s=>s.level==='excellent'?100:s.level==='developing'?65:35),
+         backgroundColor:'rgba(26,58,107,0.18)',borderColor:'rgba(26,58,107,0.85)',borderWidth:2.5,pointBackgroundColor:'rgba(26,58,107,1)',pointRadius:3},
+        {label:'원어민T',data:data.categories.map(s=>(s.prev||'developing')==='excellent'?100:(s.prev||'developing')==='developing'?65:35),
+         backgroundColor:'rgba(230,57,70,0.06)',borderColor:'rgba(230,57,70,0.75)',borderWidth:2,borderDash:[5,4],pointBackgroundColor:'rgba(230,57,70,0.8)',pointRadius:3,fill:true}
+      ]
+    },
+    options:{
+      scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:'#dce3ee'},pointLabels:{font:{size:10,family:'Noto Sans KR'},color:'#333'}}},
+      plugins:{legend:{display:true,position:'bottom',labels:{font:{size:10,family:'Noto Sans KR'},boxWidth:12,padding:8}}},
+      animation:{duration:dpr===3?0:300},devicePixelRatio:dpr
+    }
+  });
+}
+
+function buildRptHTML(data) {
+  const rows = (data.categories||[]).map(s=>{
+    const lv = getLv(s.level);
+    const lp = getLv(s.prev||'developing');
+    return `<div class="row">
+      <span class="cat"><span class="ko">${s.ko}</span><span class="en">(${s.en})</span></span>
+      <span style="display:flex;gap:4px;align-items:center;flex-shrink:0;">
+        <span style="font-size:9px;color:var(--muted);margin-right:2px;">한국T</span><span class="blv blv-${lv.value}">${lv.ko}</span>
+        <span style="font-size:9px;color:var(--muted);margin:0 2px 0 6px;">원어민T</span><span class="blv blv-${lp.value}">${lp.ko}</span>
+      </span>
+    </div>`;
+  }).join('');
+  const ex = (data.extras||[]).map(e=>`<div class="pcard"><div class="pttl">${e.t}</div><p>${e.b}</p></div>`).join('');
+  return `
+    <div class="rh"><div><div class="ac">${data.academy||'EPL영어학원'}</div><div class="sub">학생 성취도 분석 리포트 · ${data.dateStr||''}</div></div><div class="rbadge">성적 분석 리포트</div></div>
+    <div class="rband"><div><div class="sn">${data.studentName} 학생</div><div class="sm">개인 맞춤 분석 리포트</div></div>${data.course?`<div class="rpill">${data.course}</div>`:''}</div>
+    <div class="rbody">
+      <div><div class="sec-ttl">📊 영역별 성취도 분석</div><div class="ach-grid"><div id="chartWrap"><canvas></canvas></div><div class="stbl">${rows}</div></div></div>
+      ${data.str?`<div class="rcard green"><div class="cttl">${data.tS||'✅ 강점'}</div><p>${data.str}</p></div>`:''}
+      ${data.dev?`<div class="rcard yellow"><div class="cttl">${data.tD||'⚠️ 보완'}</div><p>${data.dev}</p></div>`:''}
+      ${data.par?`<div class="pcard"><div class="pttl">${data.tP||'💬 학부모 메시지'}</div><p>${data.par}</p></div>`:''}
+      ${ex}
+    </div>
+    <div class="rfooter"><strong>${data.fName||'EPL영어학원'}</strong>${data.fPhone?' &nbsp;|&nbsp; '+data.fPhone:''}</div>`;
+}
+
+// ═══ REPORT ═══
+let RCATS = getCats().map(c=>({...c,level:'excellent',prev:'developing'}));
+let rChart = null;
+
+function renderScoreRows() {
+  const w = document.getElementById('r-scores'); w.innerHTML='';
+  RCATS.forEach((c,i) => {
+    const opts = sel => LVS.map(l=>`<option value="${l.value}" ${sel===l.value?'selected':''}>${l.ko}</option>`).join('');
+    const row = document.createElement('div'); row.className='score-row';
+    row.innerHTML=`<span class="cl">${c.ko}<small style="opacity:.45;margin-left:2px">(${c.en})</small></span>
+      <select style="width:68px" data-ri="${i}" onchange="RCATS[this.dataset.ri].level=this.value">${opts(c.level)}</select>
+      <select style="width:68px" data-pi="${i}" onchange="RCATS[this.dataset.pi].prev=this.value">${opts(c.prev||'developing')}</select>`;
+    w.appendChild(row);
+  });
+}
+
+function onStuInput(val) {
+  const sugg = document.getElementById('r-sugg');
+  const matches = getAllNames().filter(n=>val.trim()&&n.includes(val.trim()));
+  if (!matches.length) { sugg.style.display='none'; return; }
+  sugg.innerHTML = matches.map(n=>`<div class="sugg-item" onclick="pickStu('${n}')">${n}</div>`).join('');
+  sugg.style.display = 'block';
+}
+function pickStu(name) {
+  document.getElementById('r-stu').value = name;
+  document.getElementById('r-sugg').style.display='none';
+  const rpts = getStuRpts(name);
+  if (!rpts.length) return;
+  const latest = rpts[0];
+  RCATS = latest.categories.map(c=>({...c,level:c.level,prev:c.prev||c.level}));
+  renderScoreRows();
+  if (latest.course) document.getElementById('r-course').value = latest.course;
+  document.getElementById('prev-notice').style.display='block';
+}
+
+function openCatModal() {
+  document.querySelectorAll('#r-scores select[data-ri]').forEach(el=>{RCATS[el.dataset.ri].level=el.value;});
+  document.querySelectorAll('#r-scores select[data-pi]').forEach(el=>{RCATS[el.dataset.pi].prev=el.value;});
+  const body = document.getElementById('cat-modal-body');
+  body.innerHTML = RCATS.map(c=>`<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
+    <input type="text" value="${c.ko}" style="flex:1.2;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;outline:none;">
+    <input type="text" value="${c.en}" style="flex:1;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;outline:none;">
+    <button onclick="this.closest('div').remove()" style="background:none;border:none;color:#ccc;font-size:15px;cursor:pointer;">✕</button>
+  </div>`).join('');
+  document.getElementById('cat-modal').classList.add('open');
+}
+function addCatModalRow() {
+  const div=document.createElement('div'); div.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:8px;';
+  div.innerHTML=`<input placeholder="한국어" style="flex:1.2;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;outline:none;">
+    <input placeholder="English" style="flex:1;padding:6px 8px;border-radius:6px;border:1.5px solid var(--border);font-size:12px;outline:none;">
+    <button onclick="this.closest('div').remove()" style="background:none;border:none;color:#ccc;font-size:15px;cursor:pointer;">✕</button>`;
+  document.getElementById('cat-modal-body').appendChild(div);
+}
+function closeCatModal() { document.getElementById('cat-modal').classList.remove('open'); }
+function applyCatModal() {
+  const newCats=[];
+  document.querySelectorAll('#cat-modal-body > div').forEach(div=>{
+    const ins=div.querySelectorAll('input');
+    const ko=ins[0].value.trim(), en=ins[1].value.trim();
+    if(ko) { const ex=RCATS.find(c=>c.ko===ko); newCats.push({ko,en,level:ex?ex.level:'excellent',prev:ex?ex.prev:'developing'}); }
+  });
+  if (!newCats.length) { alert('항목을 1개 이상 입력하세요'); return; }
+  RCATS=newCats; renderScoreRows(); closeCatModal();
+}
+document.getElementById('cat-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeCatModal();});
+
+function addExtra() {
+  const w=document.getElementById('r-extras');
+  const s=document.createElement('div'); s.className='extra-sec';
+  s.innerHTML=`<div class="extra-hdr"><input type="text" class="ti etti" value="📝 추가 항목"><button class="extra-del" onclick="this.closest('.extra-sec').remove()">✕</button></div><div class="rf"><textarea class="etbo" rows="3" placeholder="내용..."></textarea></div>`;
+  w.appendChild(s);
+}
+
+// ═══ AI (Claude) ═══
+async function aiGenerate() {
+  const dS = document.getElementById('d-str').value.trim();
+  const dD = document.getElementById('d-dev').value.trim();
+  const dP = document.getElementById('d-par').value.trim();
+  if (!dS && !dD && !dP) { toast('⚠️ 메모를 최소 하나 입력해주세요'); return; }
+
+  const student = document.getElementById('r-stu').value || '이 학생';
+  const course  = document.getElementById('r-course').value || '';
+  const cond    = document.getElementById('ai-cond').value.trim() || 'EPL영어학원 내부 리포트 작성 지침에 따라 작성';
+  const sysPrmpt = document.getElementById('ai-sys').value.trim();
+
+  const btn = document.getElementById('ai-btn');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> 작성 중...';
+
+  const userMsg = `학생: ${student}\n과정: ${course}\n조건: ${cond}\n\n[선생님 메모]\n강점: ${dS||'없음'}\n보완: ${dD||'없음'}\n학부모: ${dP||'없음'}\n\n중요: [Jon] 으로 시작하는 내용은 반드시 영어로 작성하고, [Sandy] 로 시작하는 내용은 반드시 한국어로 작성하세요. 절대 번역하지 마세요.\n\n위 메모를 바탕으로 다음 JSON 형식으로만 응답하세요:\n{"strengths":"내용","dev":"내용","parent":"내용"}`;
+
+  try {
+    const res = await fetch('/api/claude-ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system: sysPrmpt, user: userMsg })
+    });
+
+    if (!res.ok) {
+      const e = await res.json();
+      alert('Claude 오류: ' + (e.error || 'HTTP ' + res.status));
+      throw new Error(e.error || 'HTTP ' + res.status);
+    }
+
+    const result = await res.json();
+    if (result.error) throw new Error(result.error);
+
+    const rawText = result.content[0].text;
+    let parsed;
+    try {
+      const clean = rawText.replace(/```json|```/g,'').trim();
+      parsed = JSON.parse(clean);
+    } catch(pe) {
+      alert('JSON 파싱 오류. 원본: ' + rawText.substring(0,200));
+      throw pe;
+    }
+
+    if (parsed.strengths) document.getElementById('r-str').value = parsed.strengths;
+    if (parsed.dev)       document.getElementById('r-dev').value = parsed.dev;
+    if (parsed.parent)    document.getElementById('r-par').value = parsed.parent;
+
+    toast('✨ Claude 작성 완료! 아래 최종 내용을 확인하세요');
+    document.getElementById('r-str').scrollIntoView({behavior:'smooth'});
+
+  } catch(e) {
+    console.error('AI Error:', e);
+    if (!e.message.includes('Claude')) alert('오류: ' + e.message);
+  } finally {
+    btn.disabled=false; btn.innerHTML='✨ AI로 다듬기';
+  }
+}
+
+function saveApiKey() {
+  toast('Claude API는 서버에서 처리돼요 (Netlify Function)');
+}
+
+// ═══ GENERATE ═══
+function collectData() {
+  document.querySelectorAll('#r-scores select[data-ri]').forEach(el=>{RCATS[el.dataset.ri].level=el.value;});
+  document.querySelectorAll('#r-scores select[data-pi]').forEach(el=>{RCATS[el.dataset.pi].prev=el.value;});
+  const date = document.getElementById('r-date').value;
+  const extras = [];
+  document.querySelectorAll('#r-extras .extra-sec').forEach(s=>{
+    const t=s.querySelector('.etti').value.trim(), b=s.querySelector('.etbo').value.trim();
+    if(b) extras.push({t,b});
+  });
+  return {
+    academy: document.getElementById('r-acad').value||'EPL영어학원',
+    course:  document.getElementById('r-course').value||'',
+    studentName: document.getElementById('r-stu').value||'학생',
+    date, dateStr: date?new Date(date).toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'}):'',
+    str: document.getElementById('r-str').value,
+    dev: document.getElementById('r-dev').value,
+    par: document.getElementById('r-par').value,
+    tS: document.getElementById('t-str').value||'✅ 강점',
+    tD: document.getElementById('t-dev').value||'⚠️ 보완',
+    tP: document.getElementById('t-par').value||'💬 학부모 메시지',
+    fName: document.getElementById('r-fname').value||'EPL영어학원',
+    fPhone: document.getElementById('r-fphone').value||'',
+    categories: RCATS.map(c=>({ko:c.ko,en:c.en,level:c.level,prev:c.prev||c.level})),
+    extras, savedAt: new Date().toISOString()
+  };
+}
+
+function generateReport() {
+  const data = collectData();
+  document.getElementById('report').innerHTML = buildRptHTML(data);
+  if (rChart) rChart.destroy();
+  rChart = buildChart(data, document.querySelector('#report #chartWrap canvas').getContext('2d'), 3);
+  saveRpt(data.studentName, data);
+  toast(`"${data.studentName}" 리포트 저장됐어요!`);
+}
+
+function printReport() { generateReport(); setTimeout(()=>window.print(), 700); }
+
+function saveJpg() {
+  generateReport();
+  setTimeout(() => {
+    const report = document.getElementById('report');
+    const student = document.getElementById('r-stu').value || '학생';
+
+    // 임시로 고정 너비 적용 후 캡처
+    const origStyle = report.getAttribute('style') || '';
+    report.style.width = '720px';
+    report.style.minWidth = '720px';
+    report.style.position = 'relative';
+
+    // 잠깐 대기 후 전체 높이 캡처
+    requestAnimationFrame(() => {
+      const W = 720;
+      const H = report.scrollHeight;
+      html2canvas(report, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: W,
+        height: H,
+        windowWidth: W + 400,
+        windowHeight: H + 400,
+        x: 0,
+        y: 0,
+        scrollX: 0,
+        scrollY: -window.scrollY
+      }).then(c => {
+        const a = document.createElement('a');
+        a.download = student + '_성적리포트.jpg';
+        a.href = c.toDataURL('image/jpeg', 0.97);
+        a.click();
+        // 원래 스타일 복원
+        report.setAttribute('style', origStyle);
+      });
+    });
+  }, 700);
+}
+
+// ═══ INIT ═══
+document.getElementById('r-date').value = new Date().toISOString().split('T')[0];
+// Claude API는 Netlify Function에서 처리 (환경변수로 관리)
+// AI 프롬프트 하드코딩 (내부용)
+renderScoreRows();
+renderStuList('');
+
+const acad = getAcad();
+if (!acad) {
+  document.getElementById('setup-ov').classList.add('open');
+} else {
+  applyAcad();
+}
+</script>
+</body>
+</html>
