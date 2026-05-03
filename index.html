@@ -361,11 +361,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#fff;color:var(--text);}
 {"strengths":"내용","dev":"내용","parent":"내용"}</textarea>
         </div>
 
-        <div style="display:flex;gap:0;margin-top:10px;border-radius:7px;overflow:hidden;border:1.5px solid var(--primary)">
-          <button id="mode-sandy" onclick="setAiMode('sandy')" style="flex:1;padding:9px;font-size:12px;font-weight:700;border:none;cursor:pointer;font-family:inherit;background:var(--primary);color:#fff;">한국T (Sandy)</button>
-          <button id="mode-jon" onclick="setAiMode('jon')" style="flex:1;padding:9px;font-size:12px;font-weight:700;border:none;cursor:pointer;font-family:inherit;background:#fff;color:var(--primary);">원어민T (Jon)</button>
-        </div>
-        <button class="rbtn-ai" id="ai-btn" onclick="aiGenerate()">✨ AI로 다듬기</button>
+        <button class="rbtn-ai" id="ai-btn" onclick="aiGenerateBoth()">✨ AI로 다듬기 (Sandy + Jon)</button>
 
         <div style="display:none">
           <input class="api-inp" id="api-key" type="password" value="">
@@ -1018,15 +1014,7 @@ function addExtra() {
 }
 
 // ═══ AI (Claude) ═══
-let aiMode = 'sandy';
 let aiResults = { jon:{strengths:'',dev:'',parent:''}, sandy:{strengths:'',dev:'',parent:''} };
-
-function setAiMode(mode) {
-  aiMode = mode;
-  const sBtn=document.getElementById('mode-sandy'), jBtn=document.getElementById('mode-jon');
-  if(mode==='sandy'){sBtn.style.background='var(--primary)';sBtn.style.color='#fff';jBtn.style.background='#fff';jBtn.style.color='var(--primary)';}
-  else{jBtn.style.background='var(--primary)';jBtn.style.color='#fff';sBtn.style.background='#fff';sBtn.style.color='var(--primary)';}
-}
 
 function renderMergedResult() {
   ['strengths','dev','parent'].forEach(function(field){
@@ -1042,7 +1030,23 @@ function renderMergedResult() {
   });
 }
 
-async function aiGenerate() {
+async function callClaude(mode, student, course, cond, dS, dD, dP) {
+  const sysPrmpt = mode==='jon'
+    ? 'You are an English teacher at EPL English Academy.\n1. Address by first name only.\n2. State only facts, do not fabricate.\n3. Professional, warm English. No AI-sounding phrases.\n4. Each section exactly 5 lines.\n5. English only.\nRespond ONLY in JSON: {"strengths":"5 lines","dev":"5 lines","parent":"5 lines"}'
+    : '당신은 EPL영어학원 한국 선생님입니다.\n1. 호칭: 성 제외, \'이름+이가/가\' 형식.\n2. 사실만 기술, 입력되지 않은 내용 절대 지어내지 마십시오.\n3. 문체: \'~요\' 체 금지, \'~습니다/~입니다\' 체로만, 담백하게.\n4. 분량: 각 항목 정확히 5줄.\n5. 한국어만 사용.\n반드시 JSON: {"strengths":"5줄","dev":"5줄","parent":"5줄"}';
+  const userMsg = `학생: ${student}\n과정: ${course}\n조건: ${cond}\n\n[선생님 메모]\n강점: ${dS||'없음'}\n보완: ${dD||'없음'}\n학부모: ${dP||'없음'}\n\nJSON 형식으로만 응답:\n{"strengths":"내용","dev":"내용","parent":"내용"}`;
+  const res = await fetch('https://bitter-leaf-eb4d.ahyoungkim0802.workers.dev', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:2000,system:sysPrmpt,messages:[{role:'user',content:userMsg}]})
+  });
+  const result = await res.json();
+  if(result.error) throw new Error(result.error.message||result.error);
+  const raw = result.content[0].text;
+  const clean = raw.replace(/```json|```/g,'').trim();
+  return JSON.parse(clean);
+}
+
+async function aiGenerateBoth() {
   const dS = document.getElementById('d-str').value.trim();
   const dD = document.getElementById('d-dev').value.trim();
   const dP = document.getElementById('d-par').value.trim();
@@ -1053,52 +1057,31 @@ async function aiGenerate() {
   const cond    = document.getElementById('ai-cond').value.trim() || 'EPL영어학원 내부 리포트 작성 지침에 따라 작성';
 
   const btn = document.getElementById('ai-btn');
-  btn.disabled=true; btn.innerHTML=`<span class="spin"></span> ${aiMode==='jon'?'Jon':'Sandy'}T 작성 중...`;
-
-  const sysPrmpt = aiMode==='jon'
-    ? 'You are an English teacher at EPL English Academy.\n1. Address by first name only.\n2. State only facts, do not fabricate.\n3. Professional, warm English. No AI-sounding phrases.\n4. Each section exactly 5 lines.\n5. English only.\nRespond ONLY in JSON: {"strengths":"5 lines","dev":"5 lines","parent":"5 lines"}'
-    : '당신은 EPL영어학원 한국 선생님입니다.\n1. 호칭: 성 제외, \'이름+이가/가\' 형식.\n2. 사실만 기술, 입력되지 않은 내용 절대 지어내지 마십시오.\n3. 문체: \'~요\' 체 금지, \'~습니다/~입니다\' 체로만, 담백하게.\n4. 분량: 각 항목 정확히 5줄.\n5. 한국어만 사용.\n반드시 JSON: {"strengths":"5줄","dev":"5줄","parent":"5줄"}';
-
-  const userMsg = `학생: ${student}\n과정: ${course}\n조건: ${cond}\n\n[선생님 메모]\n강점: ${dS||'없음'}\n보완: ${dD||'없음'}\n학부모: ${dP||'없음'}\n\n위 메모를 바탕으로 JSON 형식으로만 응답하세요:\n{"strengths":"내용","dev":"내용","parent":"내용"}`;
+  btn.disabled=true;
 
   try {
-    const WORKER_URL='https://bitter-leaf-eb4d.ahyoungkim0802.workers.dev';
-    const res = await fetch(WORKER_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:2000, system: sysPrmpt, messages:[{role:'user',content:userMsg}] })
-    });
-
-    const result = await res.json();
-    if (result.error) { alert('Claude 오류: '+(result.error.message||result.error)); throw new Error(result.error.message||result.error); }
-
-    const rawText = result.content[0].text;
-    let parsed;
-    try {
-      const clean = rawText.replace(/```json|```/g,'').trim();
-      parsed = JSON.parse(clean);
-    } catch(pe) {
-      alert('JSON 파싱 오류. 원본: ' + rawText.substring(0,200));
-      throw pe;
-    }
-
-    // 현재 모드 슬롯에만 저장 (다른 모드 안 건드림)
-    if (parsed.strengths) aiResults[aiMode].strengths = parsed.strengths;
-    if (parsed.dev)       aiResults[aiMode].dev = parsed.dev;
-    if (parsed.parent)    aiResults[aiMode].parent = parsed.parent;
+    // 1) Sandy (한국T) 먼저
+    btn.innerHTML='<span class="spin"></span> Sandy T 작성 중...';
+    const sandy = await callClaude('sandy', student, course, cond, dS, dD, dP);
+    aiResults.sandy = {strengths:sandy.strengths||'', dev:sandy.dev||'', parent:sandy.parent||''};
     renderMergedResult();
 
-    toast(`✨ ${aiMode==='jon'?'Jon':'Sandy'}T 작성 완료!`);
+    // 2) Jon (원어민T)
+    btn.innerHTML='<span class="spin"></span> Jon T 작성 중...';
+    const jon = await callClaude('jon', student, course, cond, dS, dD, dP);
+    aiResults.jon = {strengths:jon.strengths||'', dev:jon.dev||'', parent:jon.parent||''};
+    renderMergedResult();
+
+    toast('✨ Sandy + Jon 작성 완료!');
     document.getElementById('r-str').scrollIntoView({behavior:'smooth'});
 
   } catch(e) {
     console.error('AI Error:', e);
     if(e.message.includes('Failed to fetch')||e.message.includes('NetworkError'))
       alert('⚠️ AI 서버 연결 실패\n\n인터넷 연결을 확인하거나\n브라우저 광고차단 확장 프로그램을 끄고 다시 시도해주세요.');
-    else if(!e.message.includes('Claude'))
-      alert('오류: '+e.message);
+    else alert('오류: '+e.message);
   } finally {
-    btn.disabled=false; btn.innerHTML='✨ AI로 다듬기';
+    btn.disabled=false; btn.innerHTML='✨ AI로 다듬기 (Sandy + Jon)';
   }
 }
 
