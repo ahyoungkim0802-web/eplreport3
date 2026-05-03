@@ -361,6 +361,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:#fff;color:var(--text);}
 {"strengths":"내용","dev":"내용","parent":"내용"}</textarea>
         </div>
 
+        <div style="display:flex;gap:0;margin-top:10px;border-radius:7px;overflow:hidden;border:1.5px solid var(--primary)">
+          <button id="mode-sandy" onclick="setAiMode('sandy')" style="flex:1;padding:9px;font-size:12px;font-weight:700;border:none;cursor:pointer;font-family:inherit;background:var(--primary);color:#fff;">한국T (Sandy)</button>
+          <button id="mode-jon" onclick="setAiMode('jon')" style="flex:1;padding:9px;font-size:12px;font-weight:700;border:none;cursor:pointer;font-family:inherit;background:#fff;color:var(--primary);">원어민T (Jon)</button>
+        </div>
         <button class="rbtn-ai" id="ai-btn" onclick="aiGenerate()">✨ AI로 다듬기</button>
 
         <div style="display:none">
@@ -831,9 +835,15 @@ function editPreview() {
   document.getElementById('r-course').value = data.course||'';
   document.getElementById('r-stu').value = data.studentName||'';
   document.getElementById('r-date').value = data.date||'';
-  document.getElementById('r-str').value = data.str||'';
-  document.getElementById('r-dev').value = data.dev||'';
-  document.getElementById('r-par').value = data.par||'';
+  // aiResults 슬롯 복원
+  if(data.aiResults){
+    aiResults = JSON.parse(JSON.stringify(data.aiResults));
+  } else {
+    aiResults = {jon:{strengths:'',dev:'',parent:''},sandy:{strengths:'',dev:'',parent:''}};
+  }
+  // 기존 str/dev/par 값이 있으면 일단 표시 (aiResults가 없는 구 데이터 호환)
+  if(data.aiResults) { renderMergedResult(); }
+  else { document.getElementById('r-str').value=data.str||''; document.getElementById('r-dev').value=data.dev||''; document.getElementById('r-par').value=data.par||''; }
   document.getElementById('t-str').value = data.tS||'✅ 강점 (Strengths)';
   document.getElementById('t-dev').value = data.tD||'⚠️ 세밀한 보완이 필요한 부분';
   document.getElementById('t-par').value = data.tP||'💬 학부모님께 드리는 메시지';
@@ -1008,6 +1018,30 @@ function addExtra() {
 }
 
 // ═══ AI (Claude) ═══
+let aiMode = 'sandy';
+let aiResults = { jon:{strengths:'',dev:'',parent:''}, sandy:{strengths:'',dev:'',parent:''} };
+
+function setAiMode(mode) {
+  aiMode = mode;
+  const sBtn=document.getElementById('mode-sandy'), jBtn=document.getElementById('mode-jon');
+  if(mode==='sandy'){sBtn.style.background='var(--primary)';sBtn.style.color='#fff';jBtn.style.background='#fff';jBtn.style.color='var(--primary)';}
+  else{jBtn.style.background='var(--primary)';jBtn.style.color='#fff';sBtn.style.background='#fff';sBtn.style.color='var(--primary)';}
+}
+
+function renderMergedResult() {
+  ['strengths','dev','parent'].forEach(function(field){
+    const elId = field==='strengths'?'r-str':field==='dev'?'r-dev':'r-par';
+    const el = document.getElementById(elId);
+    const s = (aiResults.sandy[field]||'').trim();
+    const j = (aiResults.jon[field]||'').trim();
+    let merged = '';
+    if(s && j) merged = '[Sandy]\n'+s+'\n\n[Jon]\n'+j;
+    else if(s) merged = s;
+    else if(j) merged = j;
+    el.value = merged;
+  });
+}
+
 async function aiGenerate() {
   const dS = document.getElementById('d-str').value.trim();
   const dD = document.getElementById('d-dev').value.trim();
@@ -1017,12 +1051,15 @@ async function aiGenerate() {
   const student = document.getElementById('r-stu').value || '이 학생';
   const course  = document.getElementById('r-course').value || '';
   const cond    = document.getElementById('ai-cond').value.trim() || 'EPL영어학원 내부 리포트 작성 지침에 따라 작성';
-  const sysPrmpt = document.getElementById('ai-sys').value.trim();
 
   const btn = document.getElementById('ai-btn');
-  btn.disabled=true; btn.innerHTML='<span class="spin"></span> 작성 중...';
+  btn.disabled=true; btn.innerHTML=`<span class="spin"></span> ${aiMode==='jon'?'Jon':'Sandy'}T 작성 중...`;
 
-  const userMsg = `학생: ${student}\n과정: ${course}\n조건: ${cond}\n\n[선생님 메모]\n강점: ${dS||'없음'}\n보완: ${dD||'없음'}\n학부모: ${dP||'없음'}\n\n중요: [Jon] 으로 시작하는 내용은 반드시 영어로 작성하고, [Sandy] 로 시작하는 내용은 반드시 한국어로 작성하세요. 절대 번역하지 마세요.\n\n위 메모를 바탕으로 다음 JSON 형식으로만 응답하세요:\n{"strengths":"내용","dev":"내용","parent":"내용"}`;
+  const sysPrmpt = aiMode==='jon'
+    ? 'You are an English teacher at EPL English Academy.\n1. Address by first name only.\n2. State only facts, do not fabricate.\n3. Professional, warm English. No AI-sounding phrases.\n4. Each section exactly 5 lines.\n5. English only.\nRespond ONLY in JSON: {"strengths":"5 lines","dev":"5 lines","parent":"5 lines"}'
+    : '당신은 EPL영어학원 한국 선생님입니다.\n1. 호칭: 성 제외, \'이름+이가/가\' 형식.\n2. 사실만 기술, 입력되지 않은 내용 절대 지어내지 마십시오.\n3. 문체: \'~요\' 체 금지, \'~습니다/~입니다\' 체로만, 담백하게.\n4. 분량: 각 항목 정확히 5줄.\n5. 한국어만 사용.\n반드시 JSON: {"strengths":"5줄","dev":"5줄","parent":"5줄"}';
+
+  const userMsg = `학생: ${student}\n과정: ${course}\n조건: ${cond}\n\n[선생님 메모]\n강점: ${dS||'없음'}\n보완: ${dD||'없음'}\n학부모: ${dP||'없음'}\n\n위 메모를 바탕으로 JSON 형식으로만 응답하세요:\n{"strengths":"내용","dev":"내용","parent":"내용"}`;
 
   try {
     const WORKER_URL='https://bitter-leaf-eb4d.ahyoungkim0802.workers.dev';
@@ -1045,11 +1082,13 @@ async function aiGenerate() {
       throw pe;
     }
 
-    if (parsed.strengths) document.getElementById('r-str').value = parsed.strengths;
-    if (parsed.dev)       document.getElementById('r-dev').value = parsed.dev;
-    if (parsed.parent)    document.getElementById('r-par').value = parsed.parent;
+    // 현재 모드 슬롯에만 저장 (다른 모드 안 건드림)
+    if (parsed.strengths) aiResults[aiMode].strengths = parsed.strengths;
+    if (parsed.dev)       aiResults[aiMode].dev = parsed.dev;
+    if (parsed.parent)    aiResults[aiMode].parent = parsed.parent;
+    renderMergedResult();
 
-    toast('✨ Claude 작성 완료! 아래 최종 내용을 확인하세요');
+    toast(`✨ ${aiMode==='jon'?'Jon':'Sandy'}T 작성 완료!`);
     document.getElementById('r-str').scrollIntoView({behavior:'smooth'});
 
   } catch(e) {
@@ -1091,6 +1130,7 @@ function collectData() {
     fName: document.getElementById('r-fname').value||'EPL영어학원',
     fPhone: document.getElementById('r-fphone').value||'',
     categories: RCATS.map(c=>({ko:c.ko,en:c.en,level:c.level,prev:c.prev||c.level})),
+    aiResults: JSON.parse(JSON.stringify(aiResults)),
     extras, savedAt: new Date().toISOString()
   };
 }
