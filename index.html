@@ -938,15 +938,15 @@ function buildRptHTML(data) {
       </span>
     </div>`;
   }).join('');
-  const ex = (data.extras||[]).map(e=>`<div class="pcard"><div class="pttl">${e.t}</div><p>${e.b}</p></div>`).join('');
+  const ex = (data.extras||[]).map(e=>`<div class="pcard"><div class="pttl">${e.t}</div><p>${(e.b||'').replace(/\n/g,'<br>')}</p></div>`).join('');
   return `
     <div class="rh"><div><div class="ac">${data.academy||'EPL영어학원'}</div><div class="sub">학생 성취도 분석 리포트 · ${data.dateStr||''}</div></div><div class="rbadge">성적 분석 리포트</div></div>
     <div class="rband"><div><div class="sn">${data.studentName} 학생</div><div class="sm">개인 맞춤 분석 리포트</div></div>${data.course?`<div class="rpill">${data.course}</div>`:''}</div>
     <div class="rbody">
       <div><div class="sec-ttl">📊 영역별 성취도 분석</div><div class="ach-grid"><div id="chartWrap"><canvas></canvas></div><div class="stbl">${rows}</div></div></div>
-      ${data.str?`<div class="rcard green"><div class="cttl">${data.tS||'✅ 강점'}</div><p>${data.str}</p></div>`:''}
-      ${data.dev?`<div class="rcard yellow"><div class="cttl">${data.tD||'⚠️ 보완'}</div><p>${data.dev}</p></div>`:''}
-      ${data.par?`<div class="pcard"><div class="pttl">${data.tP||'💬 학부모 메시지'}</div><p>${data.par}</p></div>`:''}
+      ${data.str?`<div class="rcard green"><div class="cttl">${data.tS||'✅ 강점'}</div><p>${(data.str||'').replace(/\n/g,'<br>')}</p></div>`:''}
+      ${data.dev?`<div class="rcard yellow"><div class="cttl">${data.tD||'⚠️ 보완'}</div><p>${(data.dev||'').replace(/\n/g,'<br>')}</p></div>`:''}
+      ${data.par?`<div class="pcard"><div class="pttl">${data.tP||'💬 학부모 메시지'}</div><p>${(data.par||'').replace(/\n/g,'<br>')}</p></div>`:''}
       ${ex}
     </div>
     <div class="rfooter"><strong>${data.fName||'EPL영어학원'}</strong>${data.fPhone?' &nbsp;|&nbsp; '+data.fPhone:''}</div>`;
