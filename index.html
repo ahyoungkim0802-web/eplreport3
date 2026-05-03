@@ -412,7 +412,15 @@ window.addEventListener('fbready', () => {
     const { initializeApp, getDatabase } = window.__fb;
     fbDb = getDatabase(initializeApp(FBCFG));
     document.getElementById('fb-dot').classList.add('on');
-    if (getAcad()) syncFromFirebase();
+    if (getAcad()) syncFromFirebase(true);
+    // 탭 포커스 돌아올 때 자동 동기화
+    document.addEventListener('visibilitychange', () => {
+      if(!document.hidden && fbDb && getAcad()) syncFromFirebase(true);
+    });
+    // 30초마다 백그라운드 동기화
+    setInterval(() => {
+      if(fbDb && getAcad()) syncFromFirebase(true);
+    }, 30000);
   } catch(e) { console.warn('FB:', e); }
 });
 
@@ -466,9 +474,12 @@ function getAllNames() {
 
 async function delRpt(key) { dbDel(key); await fbDel('reports/'+key); }
 
-async function syncFromFirebase() {
-  if (!fbDb) { toast('❌ Firebase 연결 안됨'); return; }
-  if (!getAcad()) { toast('❌ 학원 설정을 먼저 해주세요'); return; }
+let _syncing=false;
+async function syncFromFirebase(silent) {
+  if(_syncing) return;
+  if (!fbDb) { if(!silent)toast('❌ Firebase 연결 안됨'); return; }
+  if (!getAcad()) { if(!silent)toast('❌ 학원 설정을 먼저 해주세요'); return; }
+  _syncing=true;
   try {
     const { ref, get } = window.__fb;
     const key = fbKey();
@@ -483,8 +494,9 @@ async function syncFromFirebase() {
     const csnap=await get(ref(fbDb,key+'/cats'));
     if(csnap.exists()){localStorage.setItem(CK,JSON.stringify(csnap.val()));}
     renderStuList('');
-    toast('☁️ 동기화 완료! ↑'+uploaded+' ↓'+downloaded);
-  } catch(e) { toast('❌ 동기화 실패: '+e.message); console.error('Sync error:', e); }
+    if(!silent) toast('☁️ 동기화 완료! ↑'+uploaded+' ↓'+downloaded);
+  } catch(e) { if(!silent)toast('❌ 동기화 실패: '+e.message); }
+  _syncing=false;
 }
 
 async function exportData() {
