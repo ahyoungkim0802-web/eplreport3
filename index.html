@@ -849,8 +849,9 @@ function editPreview() {
   } else {
     aiResults = {jon:{strengths:'',dev:'',parent:''},sandy:{strengths:'',dev:'',parent:''}};
   }
-  // 기존 str/dev/par 값이 있으면 일단 표시 (aiResults가 없는 구 데이터 호환)
-  if(data.aiResults) { renderMergedResult(); }
+  // aiResults에 실제 내용이 있는지 확인
+  const hasAiContent = aiResults.sandy.strengths||aiResults.sandy.dev||aiResults.sandy.parent||aiResults.jon.strengths||aiResults.jon.dev||aiResults.jon.parent;
+  if(hasAiContent) { renderMergedResult(); }
   else { document.getElementById('r-str').value=data.str||''; document.getElementById('r-dev').value=data.dev||''; document.getElementById('r-par').value=data.par||''; }
   document.getElementById('t-str').value = data.tS||'✅ 강점 (Strengths)';
   document.getElementById('t-dev').value = data.tD||'⚠️ 세밀한 보완이 필요한 부분';
