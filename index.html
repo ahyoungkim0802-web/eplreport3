@@ -839,34 +839,39 @@ function closePreview() {
 function editPreview() {
   if (!pvKey) return;
   const data = dbLoad(pvKey); if (!data) return;
-  document.getElementById('r-acad').value = data.academy||'';
-  document.getElementById('r-course').value = data.course||'';
-  document.getElementById('r-stu').value = data.studentName||'';
-  document.getElementById('r-date').value = data.date||'';
-  // aiResults 슬롯 복원
-  if(data.aiResults){
-    aiResults = JSON.parse(JSON.stringify(data.aiResults));
-  } else {
-    aiResults = {jon:{strengths:'',dev:'',parent:''},sandy:{strengths:'',dev:'',parent:''}};
-  }
-  // aiResults에 실제 내용이 있는지 확인
-  const hasAiContent = aiResults.sandy.strengths||aiResults.sandy.dev||aiResults.sandy.parent||aiResults.jon.strengths||aiResults.jon.dev||aiResults.jon.parent;
-  if(hasAiContent) { renderMergedResult(); }
-  else { document.getElementById('r-str').value=data.str||''; document.getElementById('r-dev').value=data.dev||''; document.getElementById('r-par').value=data.par||''; }
-  document.getElementById('t-str').value = data.tS||'✅ 강점 (Strengths)';
-  document.getElementById('t-dev').value = data.tD||'⚠️ 세밀한 보완이 필요한 부분';
-  document.getElementById('t-par').value = data.tP||'💬 학부모님께 드리는 메시지';
-  document.getElementById('r-fname').value = data.fName||'';
-  document.getElementById('r-fphone').value = data.fPhone||'';
-  if (data.categories) { RCATS = data.categories.map(c=>({...c})); renderScoreRows(); }
-  const ew = document.getElementById('r-extras'); ew.innerHTML='';
-  (data.extras||[]).forEach(e => {
-    const s=document.createElement('div'); s.className='extra-sec';
-    s.innerHTML=`<div class="extra-hdr"><input type="text" class="ti etti" value="${e.t}"><button class="extra-del" onclick="this.closest('.extra-sec').remove()">✕</button></div><div class="rf"><textarea class="etbo" rows="3">${e.b}</textarea></div>`;
-    ew.appendChild(s);
-  });
+  // 먼저 화면 전환 (에러나도 흰 화면 방지)
   closePreview(); gotoPage('report');
-  toast('수정 모드로 불러왔어요 — 수정 후 리포트 생성을 눌러주세요');
+  try {
+    document.getElementById('r-acad').value = data.academy||'';
+    document.getElementById('r-course').value = data.course||'';
+    document.getElementById('r-stu').value = data.studentName||'';
+    document.getElementById('r-date').value = data.date||'';
+    // 강점/보완/학부모 복원 — str/dev/par 우선
+    document.getElementById('r-str').value = data.str||'';
+    document.getElementById('r-dev').value = data.dev||'';
+    document.getElementById('r-par').value = data.par||'';
+    // aiResults 복원
+    if(data.aiResults){
+      aiResults = JSON.parse(JSON.stringify(data.aiResults));
+      const hasAiContent = aiResults.sandy.strengths||aiResults.sandy.dev||aiResults.sandy.parent||aiResults.jon.strengths||aiResults.jon.dev||aiResults.jon.parent;
+      if(hasAiContent) renderMergedResult();
+    } else {
+      aiResults = {jon:{strengths:'',dev:'',parent:''},sandy:{strengths:'',dev:'',parent:''}};
+    }
+    document.getElementById('t-str').value = data.tS||'✅ 강점 (Strengths)';
+    document.getElementById('t-dev').value = data.tD||'⚠️ 세밀한 보완이 필요한 부분';
+    document.getElementById('t-par').value = data.tP||'💬 학부모님께 드리는 메시지';
+    document.getElementById('r-fname').value = data.fName||'';
+    document.getElementById('r-fphone').value = data.fPhone||'';
+    if (data.categories) { RCATS = data.categories.map(c=>({...c})); renderScoreRows(); }
+    const ew = document.getElementById('r-extras'); ew.innerHTML='';
+    (data.extras||[]).forEach(e => {
+      const s=document.createElement('div'); s.className='extra-sec';
+      s.innerHTML=`<div class="extra-hdr"><input type="text" class="ti etti" value="${e.t}"><button class="extra-del" onclick="this.closest('.extra-sec').remove()">✕</button></div><div class="rf"><textarea class="etbo" rows="3">${e.b}</textarea></div>`;
+      ew.appendChild(s);
+    });
+    toast('수정 모드로 불러왔어요');
+  } catch(e) { console.error('editPreview error:', e); toast('⚠️ 데이터 불러오기 일부 실패'); }
 }
 function printPreview() {
   if (!pvKey) return;
