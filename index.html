@@ -864,8 +864,8 @@ function editPreview() {
     s.innerHTML=`<div class="extra-hdr"><input type="text" class="ti etti" value="${e.t}"><button class="extra-del" onclick="this.closest('.extra-sec').remove()">✕</button></div><div class="rf"><textarea class="etbo" rows="3">${e.b}</textarea></div>`;
     ew.appendChild(s);
   });
-  delRpt(pvKey); pvKey=''; closePreview(); gotoPage('report'); generateReport();
-  toast('수정 모드로 불러왔어요');
+  closePreview(); gotoPage('report');
+  toast('수정 모드로 불러왔어요 — 수정 후 리포트 생성을 눌러주세요');
 }
 function printPreview() {
   if (!pvKey) return;
